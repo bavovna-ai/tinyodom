@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
-
-
 import os
 import warnings
 warnings.filterwarnings('ignore')
@@ -18,14 +15,6 @@ from math import atan2, pi, sqrt, cos, sin, floor
 from data_utils import *
 import tensorflow as tf
 import pickle 
-# tf..v1.disable_eager_execution()  # This can help with older TF 2.x versions
-# from tensorflow.python.keras.backend import set_session
-# config = tf..v1.ConfigProto() 
-# config.gpu_options.allow_growth = True  
-# config.log_device_placement = True  
-# sess2 = tf..v1.Session(config=config)
-# set_session(sess2)  
-
 
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
@@ -60,6 +49,18 @@ from hardware_utils import *
 import time
 
 
+def pearson_r(y_true, y_pred):
+    x = y_true
+    y = y_pred
+    mx = K.mean(x)
+    my = K.mean(y)
+    xm, ym = x-mx, y-my
+    r_num = K.sum(tf.multiply(xm,ym))
+    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
+    r = r_num / r_den
+    r = K.maximum(K.minimum(r, 1.0), -1.0)
+    return r
+
 
 # Check if GPU is available and being used by TensorFlow
 print("TensorFlow version:", tf.__version__)
@@ -85,9 +86,6 @@ except RuntimeError as e:
 
 
 # ## Import Training, Validation and Test Set
-
-# In[4]:
-
 
 sampling_rate = 200
 window_size = 400
@@ -471,7 +469,8 @@ model = build_model(input_shape=(window_size, input_dim),
 
 # opt = tf.keras.optimizers.legacy.Adam()
 opt = tf.keras.optimizers.Adam()
-model.compile(loss={'velx': 'mse','vely':'mse'},optimizer=opt)  
+model.compile(loss={'velx': ['mse', pearson_r],'vely': ['mse', pearson_r]},optimizer=opt)  
+
 checkpoint = ModelCheckpoint(model_name, monitor='loss', verbose=1, save_best_only=True)
 model.fit(x=X, y=[x_vel, y_vel],epochs=model_epochs, shuffle=True,callbacks=[checkpoint],
         batch_size=batch_size) 
@@ -483,9 +482,6 @@ model.fit(x=X, y=[x_vel, y_vel],epochs=model_epochs, shuffle=True,callbacks=[che
 
 # #### Velocity Prediction RMSE
 
-# In[ ]:
-
-
 model = load_model(model_name,custom_objects={'TCN': TCN})
 y_pred = model.predict(X_test)
 rmse_vel_x = mean_squared_error(x_vel_test, y_pred[0], squared=False)
@@ -494,9 +490,6 @@ print('Vel_X RMSE, Vel_Y RMSE:',rmse_vel_x,rmse_vel_y)
 
 
 # #### ATE and RTE Metrics
-
-# In[ ]:
-
 
 a = 0
 b = size_of_each_test[0]
@@ -608,9 +601,6 @@ plt.show()
 
 
 # #### Error Evolution
-
-# In[ ]:
-
 
 #For the last trajectory
 
