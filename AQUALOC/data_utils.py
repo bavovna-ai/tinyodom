@@ -10,7 +10,7 @@ from scipy.signal import savgol_filter
 from geographiclib.geodesic import Geodesic
 from tqdm import tqdm
 import os
-import quaternion
+# import quaternion
 import math
 import geometry_helpers
 from ahrs.filters import Madgwick
@@ -58,16 +58,20 @@ def import_aqualoc_dataset(type_flag = 1, usePhysics=True, dataset_folder = 'aqu
     
     with open(dataset_folder+type_file, 'r') as f:
             list_of_files = [line.strip() for line in f]
-    for line in tqdm(list_of_files):
+    # for line in tqdm(list_of_files):
+    for nn in tqdm(range(1, 8)):
         if(verbose==True): 
             print('Processing for (file and ground truth): '+line)
             
-        cur_file = pd.read_csv(glob.glob(dataset_folder+line+'/raw_data/*imu*.csv')[0])
+        # cur_file = pd.read_csv(glob.glob(dataset_folder+line+'/raw_data/*imu*.csv')[0])
+        cur_file = pd.read_csv(dataset_folder+'/raw_data/harbor_imu_sequence_0{}.csv'.format(nn))
         cur_train = cur_file[['a_RS_S_x [m s^-2]','a_RS_S_y [m s^-2]','a_RS_S_z [m s^-2]',
                       'w_RS_S_x [rad s^-1]','w_RS_S_y [rad s^-1]','w_RS_S_z [rad s^-1]']].to_numpy()
                                
         if(useMagnetometer):
-            cur_mag = pd.read_csv(glob.glob(dataset_folder+line+'/raw_data/*mag*.csv')[0])
+            # fn_mag = glob.glob(dataset_folder+line+'/raw_data/*mag*.csv')[0]
+            fn_mag = dataset_folder+'/raw_data/harbor_mag_sequence_0{}.csv'.format(nn)
+            cur_mag = pd.read_csv(fn_mag)
             cur_mag_train = cur_mag[[' b_x',' b_y',' b_z']].to_numpy()
             if(cur_mag_train.shape[0] > cur_train.shape[0]):
                 cur_mag_train = cur_mag_train[0:cur_train.shape[0],:]
@@ -75,9 +79,12 @@ def import_aqualoc_dataset(type_flag = 1, usePhysics=True, dataset_folder = 'aqu
                 extra = np.repeat([cur_mag_train[-1,0],cur_mag_train[-1,1],cur_mag_train[-1,2]],cur_train.shape[0]-cur_mag_train.shape[0]).reshape(cur_train.shape[0]-cur_mag_train.shape[0],3)
                 cur_mag_train = np.concatenate((cur_mag_train,extra))
             cur_train = np.concatenate((cur_train,cur_mag_train),axis=1)
-            
-        gt_file = pd.read_csv(glob.glob(dataset_folder+line+'/*colmap*.txt')[0],header=None,delimiter=' ')
-        cur_img = pd.read_csv(glob.glob(dataset_folder+line+'/raw_data/*img*.csv')[0])
+        
+        # fn_colmap = glob.glob(dataset_folder+line+'/harbor_groundtruth_files/*colmap*.txt')[0]
+        fn_colmap =dataset_folder+'/harbor_groundtruth_files/harbor_colmap_traj_sequence_0{}.txt'.format(nn)
+        gt_file = pd.read_csv(fn_colmap, header=None,delimiter=' ')
+        # cur_img = pd.read_csv(glob.glob(dataset_folder+line+'/raw_data/*img*.csv')[0])
+        cur_img = pd.read_csv(dataset_folder+'/raw_data/harbor_img_sequence_0{}.csv'.format(nn))
         idx = []
         for item in cur_img.iloc[np.int_(np.array(gt_file[0])),0].to_numpy():
             idx.append((np.abs(cur_file['#timestamp [ns]'].to_numpy()-item)).argmin())

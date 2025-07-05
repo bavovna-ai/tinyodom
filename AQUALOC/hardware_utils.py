@@ -5,7 +5,8 @@ import serial
 import re
 import numpy as np
 import tensorflow as tf
-import tensorflow.compat.v1.keras.backend as K
+# import tensorflow.compat.v1.keras.backend as K
+import tensorflow.keras.backend as K
 
 #add your target hardware properties here
 device_list = ["NUCLEO_F746ZG","NUCLEO_L476RG", "NUCLEO_F446RE", "ARCH_MAX"]
@@ -128,7 +129,7 @@ def get_model_memory_usage(batch_size, model): #SRAM Proxy
         if layer_type == 'Model':
             internal_model_mem_count += get_model_memory_usage(batch_size, l)
         single_layer_mem = 1
-        out_shape = l.output_shape
+        out_shape = l.output.shape
         if type(out_shape) is list:
             out_shape = out_shape[0]
         for s in out_shape:
